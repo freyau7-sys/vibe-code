@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>脑力训练</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:      #fdf6ee;
+  --card:    #ffffff;
+  --accent:  #e8734a;
+  --accent2: #fcd5b5;
+  --green:   #5a9e7c;
+  --green2:  #d4ede0;
+  --blue:    #4a7fb5;
+  --blue2:   #d8ecfa;
+  --text:    #2e241c;
+  --muted:   #8a7060;
+  --border:  #eeddd0;
+  --top-h:   50px;
+  --font-sans:  -apple-system, "PingFang SC", "Helvetica Neue", Arial, "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font-serif: "PingFang SC", -apple-system, "Hiragino Mincho ProN", STSong, "SimSun", serif;
+}
+html, body { min-height: 100%; font-family: var(--font-sans); background: var(--bg); color: var(--text); overflow-x: hidden; word-break: keep-all; }
+
+/* ── Top bar ── */
+#topbar { position: fixed; top: 0; left: 0; right: 0; z-index: 100; height: var(--top-h); background: var(--bg); border-bottom: 1px solid var(--border); display: none; align-items: center; padding: 0 16px; gap: 8px; }
+.back-btn { background: none; border: 1.5px solid var(--border); border-radius: 8px; padding: 4px 10px; font-size: 0.9rem; color: var(--muted); cursor: pointer; white-space: nowrap; font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
+#tb-title { font-family: var(--font-serif); font-size: 1rem; font-weight: 700; flex: 1; text-align: center; }
+#tb-score { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+
+/* ── Pages ── */
+.page { display: none; min-height: 100svh; padding-bottom: 32px; }
+.page.active { display: block; animation: fadein .2s ease; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+/* ── Home ── */
+.home-hd { padding: 24px 16px 14px; background: linear-gradient(150deg, #fdecd8 0%, var(--bg) 60%); }
+.home-logo { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 700; color: var(--accent); }
+.home-sub  { font-size: 0.8rem; color: var(--muted); margin-top: 3px; }
+.home-tip  { margin: 0 14px 14px; padding: 10px 12px; background: #fff9f4; border: 1px solid var(--accent2); border-radius: 12px; font-size: 0.84rem; color: var(--muted); line-height: 1.6; }
+.home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 14px 20px; }
+.home-tile { background: var(--card); border-radius: 16px; border: 1px solid var(--border); padding: 16px 12px 14px; cursor: pointer; box-shadow: 0 2px 10px rgba(100,60,20,.06); transition: transform .15s; -webkit-tap-highlight-color: transparent; }
+.home-tile:active { transform: scale(.97); }
+.home-tile.full { grid-column: span 2; display: flex; align-items: center; gap: 14px; }
+.home-tile .t-icon { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+.home-tile.full .t-icon { margin-bottom: 0; flex-shrink: 0; }
+.home-tile .t-name { font-family: var(--font-serif); font-size: .95rem; font-weight: 700; }
+.home-tile .t-desc { font-size: .76rem; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+.home-tile .t-tag  { display: inline-block; margin-top: 7px; font-size: .68rem; padding: 2px 8px; border-radius: 100px; font-weight: 600; }
+.tag-m { background: #fdecd8; color: var(--accent); }
+.tag-r { background: var(--green2); color: var(--green); }
+.tag-w { background: var(--blue2);  color: var(--blue);  }
+.tag-f { background: #ede8f8; color: #7a5abf; }
+.tag-l { background: #fef3c7; color: #b45309; }
+.t-best { font-size: .72rem; color: var(--accent); font-weight: 600; margin-top: 5px; min-height: 16px; }
+
+/* ── Game area ── */
+.garea { padding-top: calc(var(--top-h) + 12px); }
+
+/* Progress row */
+.prog-row { display: flex; align-items: center; gap: 10px; padding: 0 14px 12px; }
+.prog-wrap { flex: 1; height: 6px; background: #f0e0d0; border-radius: 100px; overflow: hidden; }
+.prog-fill  { height: 100%; background: linear-gradient(90deg, var(--accent2), var(--accent)); border-radius: 100px; transition: width .4s; }
+.prog-lbl   { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+
+.gb { padding: 0 14px; }
+.g-hint { background: #f5ede5; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: .85rem; color: var(--muted); text-align: center; line-height: 1.55; pointer-events: none; user-select: none; }
+
+/* Buttons */
+.g-btn { display: block; width: 100%; background: var(--accent); color: #fff; border: none; border-radius: 14px; padding: 15px 0; font-size: 1.05rem; font-family: var(--font-sans); font-weight: 500; cursor: pointer; letter-spacing: .5px; box-shadow: 0 4px 14px rgba(232,115,74,.3); -webkit-tap-highlight-color: transparent; transition: opacity .15s; }
+.g-btn:active  { opacity: .82; }
+.g-btn:disabled { background: #d0c8c0; box-shadow: none; cursor: default; }
+.g-btn.ghost { background: transparent; color: var(--accent); border: 2px solid var(--accent); box-shadow: none; margin-top: 10px; }
+
+/* Round result */
+.rbanner { border-radius: 13px; padding: 13px 14px; font-size: .93rem; font-weight: 500; text-align: center; line-height: 1.5; margin: 12px 0; display: none; }
+.rbanner.show { display: block; }
+.rbanner.ok   { background: var(--green2); color: #256644; }
+.rbanner.fail { background: #fde8e8;       color: #a03030; }
+
+/* ════ END SCREEN ════ */
+.end-screen { display: none; padding: calc(var(--top-h) + 24px) 14px 32px; animation: fadein .3s ease; }
+.end-screen.show { display: block; }
+.score-ring { width: 140px; height: 140px; border-radius: 50%; border: 6px solid var(--accent2); display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0 auto 18px; background: var(--card); box-shadow: 0 4px 24px rgba(232,115,74,.15); }
+.score-ring .sn { font-family: var(--font-serif); font-size: 2.8rem; font-weight: 700; color: var(--accent); line-height: 1; }
+.score-ring .sl { font-size: .72rem; color: var(--muted); margin-top: 4px; }
+.end-stars   { text-align: center; font-size: 2.2rem; letter-spacing: 4px; margin-bottom: 10px; }
+.end-verdict { text-align: center; font-size: 1.05rem; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.end-sub     { text-align: center; font-size: .85rem; color: var(--muted); line-height: 1.6; margin-bottom: 22px; }
+.end-best-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.end-best-card .ebl { font-size: .8rem; color: var(--muted); }
+.end-best-card .ebv { font-family: var(--font-serif); font-size: 1.35rem; font-weight: 700; color: var(--accent); }
+.new-badge { font-size: .68rem; background: var(--accent); color: #fff; padding: 2px 8px; border-radius: 100px; font-weight: 600; margin-left: 8px; vertical-align: middle; display: none; }
+
+/* ════ GAME 1 — MEMORY ════ */
+#mem-show { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; min-height: 68px; margin-bottom: 10px; }
+.mdig { width: 54px; height: 54px; border-radius: 13px; background: var(--accent); color: #fff; font-size: 1.65rem; font-weight: 700; font-family: var(--font-serif); display: flex; align-items: center; justify-content: center; animation: pop .22s ease; }
+@keyframes pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+#mem-ans { display: none; flex-wrap: wrap; justify-content: center; align-items: center; gap: 6px; min-height: 52px; margin-bottom: 10px; background: var(--bg); border-radius: 11px; border: 2px dashed var(--border); padding: 7px; }
+.mans { width: 42px; height: 42px; border-radius: 10px; background: var(--blue2); border: 2px solid var(--blue); color: var(--blue); font-size: 1.4rem; font-weight: 700; font-family: var(--font-serif); display: flex; align-items: center; justify-content: center; animation: pop .15s ease; }
+#mem-pad { display: none; margin-bottom: 12px; }
+.mpad { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; }
+.mnum { aspect-ratio: 1; border-radius: 11px; background: var(--card); border: 1.5px solid var(--border); font-size: 1.45rem; font-weight: 700; font-family: var(--font-serif); cursor: pointer; -webkit-tap-highlight-color: transparent; display: flex; align-items: center; justify-content: center; }
+.mnum:active { background: var(--accent2); }
+.mdel { grid-column: span 5; border-radius: 9px; background: #fdecd8; border: 1.5px solid var(--accent2); color: var(--accent); font-size: .9rem; font-weight: 600; cursor: pointer; padding: 9px; font-family: var(--font-sans); -webkit-tap-highlight-color: transparent; }
+
+/* ════ GAME 2 — REACTION ════ */
+#rbox { width: 100%; border-radius: 18px; height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; user-select: none; border: 3px solid var(--border); background: var(--card); margin-bottom: 10px; transition: background .12s, border-color .12s; -webkit-tap-highlight-color: transparent; }
+#rbox .rb-label { font-size: 1.05rem; font-weight: 600; color: var(--text); }
+#rbox .rb-sub   { font-size: .78rem; color: var(--muted); }
+#rbox.wait { background: #fff8dc; border-color: #ffd740; }
+#rbox.wait .rb-label { color: #9a7a00; }
+#rbox.go   { background: #d4f0e0; border-color: #5ec47a; }
+#rbox.go   .rb-label { color: #27714a; font-size: 1.3rem; }
+#rbox.oops { background: #fde8e8; border-color: #f08080; }
+#rbox.oops .rb-label { color: #a03030; }
+#rbox.done { background: #f0faf4; border-color: #5ec47a; }
+#rbox.done .rb-label { color: #27714a; }
+.rdots { text-align: center; font-size: 1.1rem; letter-spacing: 3px; min-height: 24px; margin-bottom: 10px; }
+
+/* ════ GAME 3 — WORDS ════ */
+.w-cat-box { background: var(--accent2); border-radius: 13px; padding: 12px 14px; margin-bottom: 12px; text-align: center; }
+.w-cat-label { font-size: .78rem; color: var(--muted); }
+.w-cat-name  { font-family: var(--font-serif); font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+.wgrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-bottom: 10px; }
+.wbtn { background: var(--card); border: 2px solid var(--border); border-radius: 13px; padding: 15px 4px; font-size: 1rem; font-family: var(--font-sans); color: var(--text); cursor: pointer; min-height: 54px; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; transition: transform .1s; }
+.wbtn:active  { transform: scale(.95); }
+.wbtn.correct { background: var(--green2); border-color: var(--green); color: #256644; font-weight: 600; pointer-events: none; }
+.wbtn.wrong   { background: #fde8e8; border-color: #f08080; color: #a03030; pointer-events: none; }
+.wbtn.reveal  { background: var(--green2); border-color: var(--green); color: #256644; pointer-events: none; }
+.wbtn.dead    { opacity: .4; pointer-events: none; }
+.wfb { text-align: center; font-size: .9rem; font-weight: 500; min-height: 20px; margin-bottom: 8px; }
+.wfb.g { color: var(--green); } .wfb.b { color: #a03030; }
+
+/* ════ GAME 4 — FOCUS ════ */
+.f-target-box { background: var(--blue2); border-radius: 13px; padding: 11px 14px; margin-bottom: 10px; text-align: center; font-size: .93rem; color: var(--blue); }
+.f-target-box strong { font-size: 1.3rem; font-family: var(--font-serif); }
+.egrid { display: grid; grid-template-columns: repeat(5,1fr); gap: 5px; margin-bottom: 10px; }
+.ecell { aspect-ratio: 1; border-radius: 9px; background: var(--card); border: 1.5px solid var(--border); font-size: 1.35rem; display: flex; align-items: center; justify-content: center; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.ecell:active { transform: scale(.88); }
+.ecell.found  { background: var(--green2); border-color: var(--green); }
+.ecell.wrong  { background: #fde8e8; border-color: #f08080; animation: shk .28s; }
+@keyframes shk { 0%,100%{transform:translateX(0)} 30%{transform:translateX(-4px)} 70%{transform:translateX(4px)} }
+
+/* ════ GAME 5 — LOGIC ════ */
+.lseq { display: flex; align-items: center; justify-content: center; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+.lshape { width: 54px; height: 54px; border-radius: 11px; border: 1.5px solid var(--border); background: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 1.7rem; }
+.lshape.slot { border: 2.5px dashed var(--accent); background: var(--accent2); color: var(--accent); font-size: 1.3rem; }
+.larrow { font-size: 1rem; color: var(--muted); }
+.lopts { display: grid; grid-template-columns: repeat(4,1fr); gap: 7px; margin-bottom: 10px; }
+.lopt { aspect-ratio: 1; border-radius: 11px; border: 2px solid var(--border); background: var(--card); display: flex; align-items: center; justify-content: center; font-size: 1.7rem; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.lopt:active  { transform: scale(.91); }
+.lopt.correct { border-color: var(--green); background: var(--green2); }
+.lopt.wrong   { border-color: #f08080;      background: #fde8e8; }
+</style>
+</head>
+<body>
+
+<div id="topbar">
+  <button class="back-btn" onclick="goHome()">‹ 返回</button>
+  <span id="tb-title"></span>
+  <span id="tb-score"></span>
+</div>
+
+<!-- ══════════ HOME ══════════ -->
+<div class="page active" id="page-home">
+  <div class="home-hd">
+    <div class="home-logo">🧠 脑力训练</div>
+    <div class="home-sub">每日练一练，思维更灵活</div>
+  </div>
+  <div class="home-tip">💡 <span id="tip-text"></span></div>
+  <div class="home-grid">
+    <div class="home-tile" onclick="goGame('memory')">
+      <span class="t-icon">🔢</span>
+      <div class="t-name">数字记忆</div>
+      <div class="t-desc">记住数字顺序，共 5 轮</div>
+      <span class="t-tag tag-m">记忆力</span>
+      <div class="t-best" id="hb-m"></div>
+    </div>
+    <div class="home-tile" onclick="goGame('reaction')">
+      <span class="t-icon">⚡</span>
+      <div class="t-name">反应速度</div>
+      <div class="t-desc">变绿立刻点，共 5 次</div>
+      <span class="t-tag tag-r">反应力</span>
+      <div class="t-best" id="hb-r"></div>
+    </div>
+    <div class="home-tile" onclick="goGame('words')">
+      <span class="t-icon">💬</span>
+      <div class="t-name">词语联想</div>
+      <div class="t-desc">找出同类词语，共 5 题</div>
+      <span class="t-tag tag-w">语言力</span>
+      <div class="t-best" id="hb-w"></div>
+    </div>
+    <div class="home-tile" onclick="goGame('focus')">
+      <span class="t-icon">🔍</span>
+      <div class="t-name">专注搜寻</div>
+      <div class="t-desc">找出指定符号，共 5 组</div>
+      <span class="t-tag tag-f">专注力</span>
+      <div class="t-best" id="hb-f"></div>
+    </div>
+    <div class="home-tile full" onclick="goGame('logic')">
+      <span class="t-icon">🧩</span>
+      <div>
+        <div class="t-name">图形逻辑</div>
+        <div class="t-desc">找规律选答案，共 5 题</div>
+        <span class="t-tag tag-l">逻辑力</span>
+        <div class="t-best" id="hb-l"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ GAME 1: MEMORY ══════════ -->
+<div class="page" id="page-memory">
+  <!-- game area -->
+  <div id="m-garea" class="garea">
+    <div class="prog-row">
+      <div class="prog-wrap"><div class="prog-fill" id="m-pfill" style="width:0%"></div></div>
+      <span class="prog-lbl" id="m-plbl">第 1 / 5 轮</span>
+    </div>
+    <div class="gb">
+      <div class="g-hint" id="m-hint">数字出现后会消失，凭记忆按顺序点击下方数字</div>
+      <div id="mem-show"><span style="color:var(--muted);font-size:.85rem;">点击「开始训练」后数字将出现</span></div>
+      <div id="mem-ans"><span style="color:var(--muted);font-size:.82rem;">你选的数字会显示在这里</span></div>
+      <div id="mem-pad">
+        <div class="mpad">
+          <button class="mnum" onclick="mPress(1)">1</button>
+          <button class="mnum" onclick="mPress(2)">2</button>
+          <button class="mnum" onclick="mPress(3)">3</button>
+          <button class="mnum" onclick="mPress(4)">4</button>
+          <button class="mnum" onclick="mPress(5)">5</button>
+          <button class="mnum" onclick="mPress(6)">6</button>
+          <button class="mnum" onclick="mPress(7)">7</button>
+          <button class="mnum" onclick="mPress(8)">8</button>
+          <button class="mnum" onclick="mPress(9)">9</button>
+          <button class="mnum" onclick="mPress(0)">0</button>
+          <button class="mdel" onclick="mDel()">⬅ 删除</button>
+        </div>
+      </div>
+      <div class="rbanner" id="m-res"></div>
+      <button class="g-btn" id="m-btn" onclick="mAction()" style="margin-top:14px;">开始训练</button>
+    </div>
+  </div>
+  <!-- end screen -->
+  <div class="end-screen" id="m-end">
+    <div class="score-ring"><div class="sn" id="m-escore">0</div><div class="sl">本局得分</div></div>
+    <div class="end-stars"   id="m-estars"></div>
+    <div class="end-verdict" id="m-everdict"></div>
+    <div class="end-sub"     id="m-esub"></div>
+    <div class="end-best-card">
+      <span class="ebl">历史最高</span>
+      <span><span class="ebv" id="m-ebest">—</span><span class="new-badge" id="m-enew">新纪录</span></span>
+    </div>
+    <button class="g-btn"       onclick="mRestart()">再挑战一次</button>
+    <button class="g-btn ghost" onclick="goHome()">返回首页</button>
+  </div>
+</div>
+
+<!-- ══════════ GAME 2: REACTION ══════════ -->
+<div class="page" id="page-reaction">
+  <div id="r-garea" class="garea">
+    <div class="prog-row">
+      <div class="prog-wrap"><div class="prog-fill" id="r-pfill" style="width:0%"></div></div>
+      <span class="prog-lbl" id="r-plbl">第 1 / 5 次</span>
+    </div>
+    <div class="gb">
+      <div class="g-hint">等方块变绿后立刻点击，测试你的反应速度</div>
+      <div id="rbox" onclick="rTap()">
+        <div class="rb-label" id="rb-main">点击方块开始</div>
+        <div class="rb-sub"   id="rb-sub"></div>
+      </div>
+      <div class="rdots" id="r-dots"></div>
+    </div>
+  </div>
+  <div class="end-screen" id="r-end">
+    <div class="score-ring"><div class="sn" id="r-escore">0</div><div class="sl">本局得分</div></div>
+    <div class="end-stars"   id="r-estars"></div>
+    <div class="end-verdict" id="r-everdict"></div>
+    <div class="end-sub"     id="r-esub"></div>
+    <div class="end-best-card">
+      <span class="ebl">历史最高</span>
+      <span><span class="ebv" id="r-ebest">—</span><span class="new-badge" id="r-enew">新纪录</span></span>
+    </div>
+    <button class="g-btn"       onclick="rRestart()">再挑战一次</button>
+    <button class="g-btn ghost" onclick="goHome()">返回首页</button>
+  </div>
+</div>
+
+<!-- ══════════ GAME 3: WORDS ══════════ -->
+<div class="page" id="page-words">
+  <div id="w-garea" class="garea">
+    <div class="prog-row">
+      <div class="prog-wrap"><div class="prog-fill" id="w-pfill" style="width:0%"></div></div>
+      <span class="prog-lbl" id="w-plbl">第 1 / 5 题</span>
+    </div>
+    <div class="gb">
+      <div class="g-hint">找出下方所有属于该类别的词语（每题 3 个），点击选择</div>
+      <div class="w-cat-box">
+        <div class="w-cat-label" id="w-lb">当前类别</div>
+        <div class="w-cat-name"  id="w-nm">—</div>
+      </div>
+      <div class="wgrid" id="w-grid"></div>
+      <div class="wfb" id="w-fb"></div>
+      <button class="g-btn"       id="w-start" onclick="wStart()">开始训练</button>
+      <button class="g-btn ghost" id="w-next"  onclick="wNext()" style="display:none;">下一题 →</button>
+    </div>
+  </div>
+  <div class="end-screen" id="w-end">
+    <div class="score-ring"><div class="sn" id="w-escore">0</div><div class="sl">本局得分</div></div>
+    <div class="end-stars"   id="w-estars"></div>
+    <div class="end-verdict" id="w-everdict"></div>
+    <div class="end-sub"     id="w-esub"></div>
+    <div class="end-best-card">
+      <span class="ebl">历史最高</span>
+      <span><span class="ebv" id="w-ebest">—</span><span class="new-badge" id="w-enew">新纪录</span></span>
+    </div>
+    <button class="g-btn"       onclick="wRestart()">再挑战一次</button>
+    <button class="g-btn ghost" onclick="goHome()">返回首页</button>
+  </div>
+</div>
+
+<!-- ══════════ GAME 4: FOCUS ══════════ -->
+<div class="page" id="page-focus">
+  <div id="f-garea" class="garea">
+    <div class="prog-row">
+      <div class="prog-wrap"><div class="prog-fill" id="f-pfill" style="width:0%"></div></div>
+      <span class="prog-lbl" id="f-plbl">第 1 / 5 组</span>
+    </div>
+    <div class="gb">
+      <div class="g-hint">找出格子中所有指定符号，找完一组后进入下一组</div>
+      <div class="f-target-box" id="f-pt" style="display:none;"></div>
+      <div class="egrid" id="f-grid"></div>
+      <div class="rbanner" id="f-res"></div>
+      <button class="g-btn" id="f-btn" onclick="fAction()">开始训练</button>
+    </div>
+  </div>
+  <div class="end-screen" id="f-end">
+    <div class="score-ring"><div class="sn" id="f-escore">0</div><div class="sl">本局得分</div></div>
+    <div class="end-stars"   id="f-estars"></div>
+    <div class="end-verdict" id="f-everdict"></div>
+    <div class="end-sub"     id="f-esub"></div>
+    <div class="end-best-card">
+      <span class="ebl">历史最高</span>
+      <span><span class="ebv" id="f-ebest">—</span><span class="new-badge" id="f-enew">新纪录</span></span>
+    </div>
+    <button class="g-btn"       onclick="fRestart()">再挑战一次</button>
+    <button class="g-btn ghost" onclick="goHome()">返回首页</button>
+  </div>
+</div>
+
+<!-- ══════════ GAME 5: LOGIC ══════════ -->
+<div class="page" id="page-logic">
+  <div id="l-garea" class="garea">
+    <div class="prog-row">
+      <div class="prog-wrap"><div class="prog-fill" id="l-pfill" style="width:0%"></div></div>
+      <span class="prog-lbl" id="l-plbl">第 1 / 5 题</span>
+    </div>
+    <div class="gb">
+      <div class="g-hint">观察序列规律，点击下方正确答案</div>
+      <div class="lseq"  id="l-seq"></div>
+      <div class="lopts" id="l-opts"></div>
+      <div class="rbanner" id="l-res"></div>
+      <button class="g-btn" id="l-btn" onclick="lAction()">开始训练</button>
+    </div>
+  </div>
+  <div class="end-screen" id="l-end">
+    <div class="score-ring"><div class="sn" id="l-escore">0</div><div class="sl">本局得分</div></div>
+    <div class="end-stars"   id="l-estars"></div>
+    <div class="end-verdict" id="l-everdict"></div>
+    <div class="end-sub"     id="l-esub"></div>
+    <div class="end-best-card">
+      <span class="ebl">历史最高</span>
+      <span><span class="ebv" id="l-ebest">—</span><span class="new-badge" id="l-enew">新纪录</span></span>
+    </div>
+    <button class="g-btn"       onclick="lRestart()">再挑战一次</button>
+    <button class="g-btn ghost" onclick="goHome()">返回首页</button>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   SHARED HELPERS
+══════════════════════════════════════ */
+const ROUNDS = 5; // all games: 5 rounds per session
+function sfl(a) { return a.sort(() => Math.random() - .5); }
+
+function starsFor(s) { return s >= 80 ? '⭐⭐⭐' : s >= 60 ? '⭐⭐' : '⭐'; }
+function verdictFor(s) {
+  if (s >= 80) return ['太棒了！', '专注力和反应力都很出色，继续保持！'];
+  if (s >= 60) return ['不错！',   '已经很好了，再练几次一定能更上一层楼！'];
+  return            ['加油！',    '每天坚持练习，进步一定会越来越明显的。'];
+}
+
+// Show end screen, save best, return whether new record
+function showEnd(pre, score, lsKey) {
+  const old = +(localStorage.getItem(lsKey) || 0);
+  const isNew = score > old;
+  if (isNew) localStorage.setItem(lsKey, score);
+  const best = isNew ? score : old;
+  const [vt, vs] = verdictFor(score);
+
+  document.getElementById(pre + '-escore').textContent   = score;
+  document.getElementById(pre + '-estars').textContent   = starsFor(score);
+  document.getElementById(pre + '-everdict').textContent = vt;
+  document.getElementById(pre + '-esub').textContent     = vs;
+  document.getElementById(pre + '-ebest').textContent    = best;
+  document.getElementById(pre + '-enew').style.display   = isNew ? 'inline' : 'none';
+
+  document.getElementById(pre + '-garea').style.display = 'none';
+  document.getElementById(pre + '-end').classList.add('show');
+  updateHomeBadge();
+}
+
+function setProgress(pre, round) {
+  const pct = ((round - 1) / ROUNDS) * 100;
+  document.getElementById(pre + '-pfill').style.width = pct + '%';
+  document.getElementById(pre + '-plbl').textContent  = `第 ${round} / ${ROUNDS} 轮`;
+}
+
+/* Home badges */
+function updateHomeBadge() {
+  const map = { m: 'm-b', r: 'r-b', w: 'w-b', f: 'f-b', l: 'l-b' };
+  Object.entries(map).forEach(([pre, key]) => {
+    const v = +(localStorage.getItem(key) || 0);
+    document.getElementById('hb-' + pre).textContent = v ? `最高分 ${v} 分` : '';
+  });
+}
+updateHomeBadge();
+
+/* Nav */
+const NAMES = { memory:'数字记忆', reaction:'反应速度', words:'词语联想', focus:'专注搜寻', logic:'图形逻辑' };
+function goHome() {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-home').classList.add('active');
+  document.getElementById('topbar').style.display = 'none';
+  window.scrollTo(0, 0);
+  updateHomeBadge();
+}
+function goGame(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  document.getElementById('tb-title').textContent = NAMES[id] || '';
+  const keyMap = { memory:'m-b', reaction:'r-b', words:'w-b', focus:'f-b', logic:'l-b' };
+  const best = +(localStorage.getItem(keyMap[id]) || 0);
+  document.getElementById('tb-score').textContent = best ? `最高 ${best} 分` : '';
+  document.getElementById('topbar').style.display = 'flex';
+  window.scrollTo(0, 0);
+}
+
+/* Tips */
+const TIPS = ['每天练15分钟，坚持一个月记忆力会明显改善','深呼吸后再训练，专注效果更好','睡眠充足是大脑最好的修复方式','不要着急，放松心态比快速作答更重要','多喝水！大脑需要充足水分才能高效运转','散步后训练效果更佳，运动促进大脑供血','每次答对都值得给自己点个赞 👍'];
+document.getElementById('tip-text').textContent = TIPS[new Date().getDay() % TIPS.length];
+
+
+/* ══════════════════════════════════════
+   GAME 1 — NUMBER MEMORY
+   5 rounds, difficulty 3→4→5→6→7 digits
+   Each round: correct = 20pts, wrong = 0pts → max 100
+══════════════════════════════════════ */
+const M_LENS = [5, 6, 7, 8, 9]; // digit length per round
+let mRound, mScore, mSeq, mIn, mPhase;
+
+function mInit() {
+  mRound = 0; mScore = 0; mPhase = 'idle';
+  document.getElementById('m-garea').style.display = 'block';
+  document.getElementById('m-end').classList.remove('show');
+  document.getElementById('m-res').classList.remove('show');
+  document.getElementById('mem-pad').style.display = 'none';
+  document.getElementById('mem-ans').style.display = 'none';
+  document.getElementById('mem-show').innerHTML = '<span style="color:var(--muted);font-size:.85rem;">点击「开始训练」后数字将出现</span>';
+  setProgress('m', 1);
+  document.getElementById('m-plbl').textContent = `第 1 / ${ROUNDS} 轮`;
+  document.getElementById('m-btn').disabled = false;
+  document.getElementById('m-btn').textContent = '开始训练';
+  document.getElementById('m-hint').textContent = '数字出现后会消失，凭记忆按顺序点击下方数字';
+}
+function mRestart() { mInit(); }
+
+function mAction() {
+  // button press: start a round, or advance after result
+  if (mPhase === 'result') {
+    if (mRound >= ROUNDS) { showEnd('m', mScore, 'm-b'); return; }
+    mPlayRound();
+  } else if (mPhase === 'idle') {
+    mPlayRound();
+  }
+}
+
+function mPlayRound() {
+  mRound++;
+  const len = M_LENS[mRound - 1];
+  mSeq = Array.from({ length: len }, () => Math.floor(Math.random() * 10));
+  mIn = []; mPhase = 'show';
+
+  setProgress('m', mRound);
+  document.getElementById('m-plbl').textContent = `第 ${mRound} / ${ROUNDS} 轮`;
+  document.getElementById('m-btn').disabled = true;
+  document.getElementById('m-res').classList.remove('show');
+
+  const ansRow = document.getElementById('mem-ans');
+  ansRow.style.display = 'none';
+  ansRow.innerHTML = '<span style="color:var(--muted);font-size:.82rem;">你选的数字会显示在这里</span>';
+  document.getElementById('mem-pad').style.display = 'none';
+  document.getElementById('m-hint').textContent = `记住这 ${len} 个数字，消失后凭记忆作答`;
+
+  const area = document.getElementById('mem-show');
+  area.innerHTML = '';
+  mSeq.forEach((n, i) => setTimeout(() => {
+    const d = document.createElement('div');
+    d.className = 'mdig'; d.textContent = n; area.appendChild(d);
+  }, i * 520));
+
+  setTimeout(() => {
+    area.innerHTML = '<span style="color:var(--muted);font-size:.85rem;">数字已消失，按顺序作答 👇</span>';
+    document.getElementById('m-hint').textContent = `按顺序点击 ${len} 个数字`;
+    ansRow.style.display = 'flex';
+    document.getElementById('mem-pad').style.display = 'block';
+    mPhase = 'input';
+  }, len * 520 + 1500);
+}
+
+function mPress(n) {
+  if (mPhase !== 'input') return;
+  mIn.push(n);
+  const row = document.getElementById('mem-ans');
+  row.innerHTML = '';
+  mIn.forEach(d => { const c = document.createElement('div'); c.className = 'mans'; c.textContent = d; row.appendChild(c); });
+  if (mIn.length >= mSeq.length) { mPhase = 'checking'; setTimeout(mCheck, 240); }
+}
+
+function mDel() {
+  if (mPhase !== 'input' || !mIn.length) return;
+  mIn.pop();
+  const row = document.getElementById('mem-ans');
+  if (!mIn.length) { row.innerHTML = '<span style="color:var(--muted);font-size:.82rem;">你选的数字会显示在这里</span>'; return; }
+  row.innerHTML = '';
+  mIn.forEach(d => { const c = document.createElement('div'); c.className = 'mans'; c.textContent = d; row.appendChild(c); });
+}
+
+function mCheck() {
+  const ok = mSeq.join('') === mIn.join('');
+  document.getElementById('mem-pad').style.display = 'none';
+  const pts = ok ? 20 : 0;
+  mScore += pts;
+  const res = document.getElementById('m-res');
+  if (ok) {
+    res.textContent = `🎉 正确！答案：${mSeq.join(' ')}  +20 分`;
+    res.className = 'rbanner show ok';
+  } else {
+    res.textContent = `正确答案：${mSeq.join(' ')}，你的回答：${mIn.join(' ')}  +0 分`;
+    res.className = 'rbanner show fail';
+  }
+  mPhase = 'result';
+  const btn = document.getElementById('m-btn');
+  btn.disabled = false;
+  btn.textContent = mRound >= ROUNDS ? '查看本局成绩' : '下一轮 →';
+  document.getElementById('m-hint').textContent = `当前累计：${mScore} 分`;
+}
+
+mInit();
+
+
+/* ══════════════════════════════════════
+   GAME 2 — REACTION SPEED
+   5 taps; score = average of 5 mapped to 0-100
+   Mapping: ≤400ms→100, 900ms→0, linear clamp
+══════════════════════════════════════ */
+let rRound, rTimes, rState, rTimer, rT0;
+
+function msToScore(ms) { return Math.max(0, Math.min(100, Math.round((900 - ms) / 5))); }
+
+function rInit() {
+  rRound = 0; rTimes = []; rState = 'idle';
+  document.getElementById('r-garea').style.display = 'block';
+  document.getElementById('r-end').classList.remove('show');
+  document.getElementById('r-dots').textContent = '';
+  setProgress('r', 1);
+  document.getElementById('r-plbl').textContent = `第 1 / ${ROUNDS} 次`;
+  const box = document.getElementById('rbox');
+  box.removeAttribute('style'); box.className = '';
+  document.getElementById('rb-main').textContent = '点击方块开始';
+  document.getElementById('rb-sub').textContent  = '';
+}
+function rRestart() { clearTimeout(rTimer); rInit(); }
+
+function rBeginRound() {
+  rState = 'wait';
+  const box = document.getElementById('rbox');
+  box.removeAttribute('style'); box.className = 'wait';
+  document.getElementById('rb-main').textContent = '⚠️ 准备好…';
+  document.getElementById('rb-sub').textContent  = '等变绿后立刻点击';
+  rTimer = setTimeout(() => {
+    box.className = 'go';
+    document.getElementById('rb-main').textContent = '👆 点这里！';
+    document.getElementById('rb-sub').textContent  = '';
+    rT0 = Date.now(); rState = 'go';
+  }, 1500 + Math.random() * 3000);
+}
+
+function rTap() {
+  const box = document.getElementById('rbox');
+  if (rState === 'idle') { rBeginRound(); return; }
+  if (rState === 'wait') {
+    clearTimeout(rTimer);
+    box.removeAttribute('style'); box.className = 'oops';
+    document.getElementById('rb-main').textContent = '😅 太早了！';
+    document.getElementById('rb-sub').textContent  = '请重新点击方块开始';
+    rState = 'idle'; return;
+  }
+  if (rState === 'go') {
+    const ms = Date.now() - rT0;
+    rTimes.push(ms); rRound++;
+    const msg = ms < 250 ? '🔥 超快！' : ms < 400 ? '⚡ 很好！' : ms < 600 ? '👍 不错！' : '💪 继续加油！';
+    box.removeAttribute('style'); box.className = 'done';
+    document.getElementById('rb-main').textContent = `${msg} ${ms} 毫秒`;
+    document.getElementById('r-dots').textContent  = '最近：' + rTimes.slice(-5).map(t => t < 400 ? '🟢' : t < 600 ? '🟡' : '🔴').join(' ');
+    setProgress('r', Math.min(rRound + 1, ROUNDS));
+    document.getElementById('r-plbl').textContent = rRound >= ROUNDS ? `${ROUNDS} / ${ROUNDS} 次` : `第 ${rRound + 1} / ${ROUNDS} 次`;
+
+    if (rRound >= ROUNDS) {
+      // compute score: average ms → 0-100
+      const avg = rTimes.reduce((a, b) => a + b, 0) / rTimes.length;
+      const score = msToScore(avg);
+      document.getElementById('rb-sub').textContent = `5次平均：${Math.round(avg)} 毫秒，计算得分中…`;
+      rState = 'done';
+      setTimeout(() => showEnd('r', score, 'r-b'), 1400);
+    } else {
+      document.getElementById('rb-sub').textContent = `点击方块继续第 ${rRound + 1} 次`;
+      rState = 'idle';
+    }
+  }
+}
+
+rInit();
+
+
+/* ══════════════════════════════════════
+   GAME 3 — WORD CHOICE
+   5 rounds, each round: all 3 correct = 20pts, any wrong = 0pts → max 100
+══════════════════════════════════════ */
+const WCATS = [
+  { name:'蔬菜',     ok:['白菜','土豆','茄子','萝卜','西红柿','黄瓜'],     no:['苹果','香蕉','猫','飞机','电视','玫瑰']   },
+  { name:'水果',     ok:['苹果','香蕉','橙子','西瓜','葡萄','草莓'],       no:['白菜','茄子','狗','火车','冰箱','向日葵'] },
+  { name:'动物',     ok:['猫','狗','牛','羊','马','老虎'],                 no:['苹果','土豆','飞机','冰箱','玫瑰','公园'] },
+  { name:'交通工具', ok:['汽车','公交','地铁','飞机','火车','轮船'],       no:['猫','西红柿','电视','玫瑰','橙子','苹果'] },
+  { name:'家电',     ok:['电视','冰箱','洗衣机','空调','微波炉','电饭锅'], no:['马','黄瓜','火车','玫瑰','香蕉','老虎']  },
+  { name:'花卉',     ok:['玫瑰','向日葵','荷花','菊花','梅花','兰花'],     no:['苹果','猫','飞机','电视','白菜','老虎']  },
+];
+const WOK = 3;
+let wRound, wScore, wPick, wFound, wDone, wCatOrder;
+
+function wInit() {
+  wRound = 0; wScore = 0;
+  wCatOrder = sfl([0,1,2,3,4,5]).slice(0, ROUNDS); // pick 5 random categories
+  document.getElementById('w-garea').style.display = 'block';
+  document.getElementById('w-end').classList.remove('show');
+  document.getElementById('w-grid').innerHTML = '';
+  document.getElementById('w-fb').textContent = '';
+  document.getElementById('w-fb').className = 'wfb';
+  document.getElementById('w-nm').textContent = '—';
+  document.getElementById('w-lb').textContent = '当前类别';
+  document.getElementById('w-start').style.display = 'block';
+  document.getElementById('w-start').textContent = '开始训练';
+  document.getElementById('w-next').style.display = 'none';
+  setProgress('w', 1);
+}
+function wRestart() { wInit(); }
+function wStart()   { document.getElementById('w-start').style.display = 'none'; wPlayRound(); }
+
+function wPlayRound() {
+  wRound++; wFound = 0; wDone = false;
+  setProgress('w', wRound);
+  document.getElementById('w-plbl').textContent = `第 ${wRound} / ${ROUNDS} 题`;
+  document.getElementById('w-next').style.display = 'none';
+  document.getElementById('w-fb').textContent = ''; document.getElementById('w-fb').className = 'wfb';
+
+  const cat = WCATS[wCatOrder[wRound - 1]];
+  wPick = sfl([...cat.ok]).slice(0, WOK);
+  const cards = sfl([...wPick, ...sfl([...cat.no]).slice(0, 9 - WOK)]);
+  document.getElementById('w-lb').textContent = `找出属于【${cat.name}】的词语，共 ${WOK} 个`;
+  document.getElementById('w-nm').textContent = cat.name;
+
+  const grid = document.getElementById('w-grid'); grid.innerHTML = '';
+  cards.forEach(w => {
+    const b = document.createElement('button'); b.className = 'wbtn'; b.textContent = w;
+    b.onclick = () => wTap(b, w); grid.appendChild(b);
+  });
+}
+
+function wTap(btn, word) {
+  if (wDone) return;
+  if (wPick.includes(word)) {
+    btn.classList.add('correct'); wFound++;
+    if (wFound < WOK) {
+      document.getElementById('w-fb').textContent = `✅ 对！还有 ${WOK - wFound} 个`;
+      document.getElementById('w-fb').className = 'wfb g';
+    } else {
+      wDone = true; wScore += 20;
+      document.getElementById('w-fb').textContent = '🎉 全对！+20 分';
+      document.getElementById('w-fb').className = 'wfb g';
+      wShowNext();
+    }
+  } else {
+    wDone = true;
+    btn.classList.add('wrong');
+    document.querySelectorAll('.wbtn').forEach(b => { if (wPick.includes(b.textContent)) b.classList.add('reveal'); b.classList.add('dead'); });
+    document.getElementById('w-fb').textContent = '❌ 答错了，正确答案已高亮  +0 分';
+    document.getElementById('w-fb').className = 'wfb b';
+    wShowNext();
+  }
+}
+
+function wShowNext() {
+  const nb = document.getElementById('w-next');
+  nb.style.display = 'block';
+  nb.textContent = wRound >= ROUNDS ? '查看本局成绩' : '下一题 →';
+}
+function wNext() {
+  if (wRound >= ROUNDS) { showEnd('w', wScore, 'w-b'); return; }
+  wPlayRound();
+}
+
+wInit();
+
+
+/* ══════════════════════════════════════
+   GAME 4 — FOCUS FIND
+   5 rounds; each round: find all targets
+   Score per round = 20 - (wrong_taps × 4), min 0 → max 100
+══════════════════════════════════════ */
+const EMLIST = ['🌸','🌺','🌻','🌼','🍀','🍁','🍂','⭐','🌙','☀️','🌈','❄️'];
+let fRound, fScore, fPos, fFnd, fTot, fWrong, fActive;
+
+function fInit() {
+  fRound = 0; fScore = 0; fActive = false;
+  document.getElementById('f-garea').style.display = 'block';
+  document.getElementById('f-end').classList.remove('show');
+  document.getElementById('f-grid').innerHTML = '';
+  document.getElementById('f-res').classList.remove('show');
+  document.getElementById('f-pt').style.display = 'none';
+  document.getElementById('f-btn').textContent = '开始训练';
+  document.getElementById('f-btn').disabled = false;
+  setProgress('f', 1);
+  document.getElementById('f-plbl').textContent = `第 1 / ${ROUNDS} 组`;
+}
+function fRestart() { fInit(); }
+
+function fAction() {
+  if (!fActive) { fPlayRound(); }
+}
+
+function fPlayRound() {
+  fRound++; fActive = true; fWrong = 0;
+  setProgress('f', fRound);
+  document.getElementById('f-plbl').textContent = `第 ${fRound} / ${ROUNDS} 组`;
+  document.getElementById('f-res').classList.remove('show');
+  document.getElementById('f-btn').disabled = true;
+
+  const ti = Math.floor(Math.random() * 8);
+  const tgt = EMLIST[ti];
+  const cnt = 3 + Math.floor(Math.random() * 3); // 3-5 targets
+  fPos = []; fFnd = []; fTot = cnt;
+
+  const pt = document.getElementById('f-pt');
+  pt.style.display = 'block';
+  pt.innerHTML = `找出所有的 <strong>${tgt}</strong>，共 <strong>${cnt}</strong> 个`;
+
+  const dist = EMLIST.filter((_, i) => i !== ti);
+  let cells = Array(25).fill(0).map(() => dist[Math.floor(Math.random() * dist.length)]);
+  while (fPos.length < cnt) { const p = Math.floor(Math.random() * 25); if (!fPos.includes(p)) fPos.push(p); }
+  fPos.forEach(p => cells[p] = tgt);
+
+  const grid = document.getElementById('f-grid'); grid.innerHTML = '';
+  cells.forEach((e, i) => {
+    const c = document.createElement('div'); c.className = 'ecell'; c.textContent = e;
+    c.onclick = () => fTap(c, i); grid.appendChild(c);
+  });
+}
+
+function fTap(cell, idx) {
+  if (!fActive || cell.classList.contains('found')) return;
+  if (fPos.includes(idx)) {
+    cell.classList.add('found'); fFnd.push(idx);
+    if (fFnd.length >= fTot) {
+      fActive = false;
+      const pts = Math.max(0, 20 - fWrong * 4);
+      fScore += pts;
+      const res = document.getElementById('f-res');
+      res.textContent = fWrong === 0 ? `🎉 全部找到！零失误 +20 分` : `✅ 找完了！错点 ${fWrong} 次，得 +${pts} 分`;
+      res.className = 'rbanner show ok';
+      const btn = document.getElementById('f-btn');
+      btn.disabled = false;
+      btn.textContent = fRound >= ROUNDS ? '查看本局成绩' : '下一组 →';
+    }
+  } else {
+    fWrong++;
+    cell.classList.add('wrong');
+    setTimeout(() => cell.classList.remove('wrong'), 400);
+  }
+}
+
+function fActionBtn() {
+  if (fRound >= ROUNDS && !fActive) { showEnd('f', fScore, 'f-b'); return; }
+  if (!fActive) fPlayRound();
+}
+// Override onclick on f-btn to handle both start and next
+document.getElementById('f-btn').onclick = function() {
+  if (!fActive && fRound === 0) { fPlayRound(); return; }
+  if (!fActive && fRound > 0) {
+    if (fRound >= ROUNDS) { showEnd('f', fScore, 'f-b'); } else { fPlayRound(); }
+  }
+};
+
+fInit();
+
+
+/* ══════════════════════════════════════
+   GAME 5 — LOGIC
+   5 questions; correct = 20pts → max 100
+   (Pick 5 from pool of 10, no repeats per session)
+══════════════════════════════════════ */
+const LPUZZ = [
+  { seq:['🔴','🔵','🔴','🔵','❓'], ans:'🔵', opts:['🔵','🟡','🔴','🟢'], hint:'红蓝交替规律' },
+  { seq:['⬆️','➡️','⬇️','⬅️','❓'], ans:'⬆️', opts:['⬆️','➡️','⬇️','⬅️'], hint:'方向循环一圈' },
+  { seq:['🌱','🌿','🌳','❓'],       ans:'🍂', opts:['🍂','🌱','🌾','🌻'], hint:'生长再凋零' },
+  { seq:['🌑','🌒','🌓','🌔','❓'], ans:'🌕', opts:['🌕','🌖','🌗','🌑'], hint:'月相越来越圆' },
+  { seq:['🐣','🐤','🐓','❓'],       ans:'🥚', opts:['🥚','🦅','🐔','🐧'], hint:'生命的循环' },
+  { seq:['☀️','🌤','⛅','🌧','❓'], ans:'⛈️', opts:['⛈️','🌈','❄️','🌞'], hint:'天气逐渐变坏' },
+  { seq:['1','2','4','8','❓'],       ans:'16', opts:['16','9','10','12'], hint:'每次翻倍' },
+  { seq:['🟥','🟥🟥','🟥🟥🟥','❓'], ans:'4个', opts:['4个','5个','3个','6个'], hint:'每次加一个' },
+  { seq:['🍎','🍊','🍋','🍇','❓'], ans:'🍓', opts:['🍓','🍌','🥝','🍑'], hint:'彩虹颜色顺序' },
+  { seq:['🐟','🐠','🦈','❓'],       ans:'🐋', opts:['🐋','🦞','🐙','🦀'], hint:'体型越来越大' },
+  { seq:['🌙','🌙🌙','🌙🌙🌙','❓'], ans:'4个', opts:['4个','5个','2个','3个'], hint:'每次加一个月亮' },
+  { seq:['🔺','🔷','🔺','🔷','❓'], ans:'🔺', opts:['🔺','🔶','🔷','⭕'], hint:'三角菱形交替' },
+  { seq:['🐛','🦋','🐛','🦋','❓'], ans:'🐛', opts:['🐛','🦗','🦋','🐝'], hint:'毛毛虫蝴蝶交替' },
+  { seq:['1','3','5','7','❓'],       ans:'9', opts:['9','8','10','11'], hint:'每次加2，奇数列' },
+  { seq:['🌍','🌎','🌏','❓'],       ans:'🌍', opts:['🌍','🌐','🗺️','🧭'], hint:'三个地球循环' },
+  { seq:['😀','😐','😢','😡','❓'], ans:'😀', opts:['😀','😴','🥳','😎'], hint:'表情循环一圈' },
+  { seq:['2','4','8','16','❓'],      ans:'32', opts:['32','24','20','18'], hint:'每次乘以2' },
+  { seq:['🌷','🌸','🌼','🌻','❓'], ans:'🌹', opts:['🌹','🍀','🌿','🎋'], hint:'花朵种类循环' },
+  { seq:['🥇','🥈','🥉','❓'],       ans:'🏅', opts:['🏅','🎖️','🏆','🎗️'], hint:'奖牌由高到低' },
+  { seq:['🐜','🐝','🦗','🦋','❓'], ans:'🐛', opts:['🐛','🐠','🐦','🦎'], hint:'昆虫变态顺序' },
+];
+let lRound, lScore, lDone2, lPool;
+
+function lInit() {
+  lRound = 0; lScore = 0; lDone2 = false;
+  lPool = sfl([...LPUZZ]).slice(0, ROUNDS); // 5 random puzzles
+  document.getElementById('l-garea').style.display = 'block';
+  document.getElementById('l-end').classList.remove('show');
+  document.getElementById('l-seq').innerHTML = '';
+  document.getElementById('l-opts').innerHTML = '';
+  document.getElementById('l-res').classList.remove('show');
+  document.getElementById('l-btn').style.display = 'block';
+  document.getElementById('l-btn').textContent = '开始训练';
+  setProgress('l', 1);
+  document.getElementById('l-plbl').textContent = `第 1 / ${ROUNDS} 题`;
+}
+function lRestart() { lInit(); }
+
+function lAction() {
+  if (lDone2) {
+    if (lRound >= ROUNDS) { showEnd('l', lScore, 'l-b'); return; }
+    lPlayRound();
+  } else if (lRound === 0) {
+    lPlayRound();
+  }
+}
+
+function lPlayRound() {
+  lRound++; lDone2 = false;
+  setProgress('l', lRound);
+  document.getElementById('l-plbl').textContent = `第 ${lRound} / ${ROUNDS} 题`;
+  document.getElementById('l-res').classList.remove('show');
+  document.getElementById('l-btn').style.display = 'none';
+
+  const p = lPool[lRound - 1];
+  const seq = document.getElementById('l-seq'); seq.innerHTML = '';
+  p.seq.forEach((s, i) => {
+    const b = document.createElement('div');
+    b.className = s === '❓' ? 'lshape slot' : 'lshape'; b.textContent = s; seq.appendChild(b);
+    if (i < p.seq.length - 1) { const a = document.createElement('span'); a.className = 'larrow'; a.textContent = '→'; seq.appendChild(a); }
+  });
+
+  const opts = document.getElementById('l-opts'); opts.innerHTML = '';
+  sfl([...p.opts]).forEach(o => {
+    const b = document.createElement('div'); b.className = 'lopt'; b.textContent = o;
+    b.onclick = () => lPick(b, o, p); opts.appendChild(b);
+  });
+}
+
+function lPick(btn, val, p) {
+  if (lDone2) return; lDone2 = true;
+  const ok = val === p.ans;
+  document.querySelectorAll('.lopt').forEach(b => { if (b.textContent === p.ans) b.classList.add('correct'); });
+  if (!ok) btn.classList.add('wrong');
+  if (ok) lScore += 20;
+  const r = document.getElementById('l-res');
+  r.textContent = ok ? `🎉 答对了！+20 分` : `正确答案已高亮  —  规律：${p.hint}  +0 分`;
+  r.className = 'rbanner show ' + (ok ? 'ok' : 'fail');
+  const lb = document.getElementById('l-btn');
+  lb.style.display = 'block';
+  lb.textContent = lRound >= ROUNDS ? '查看本局成绩' : '下一题 →';
+}
+
+lInit();
+</script>
+</body>
+</html>
